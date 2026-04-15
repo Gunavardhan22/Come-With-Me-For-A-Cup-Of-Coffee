@@ -1,5 +1,7 @@
-import { ArrowLeft, Minus, Plus, Trash2, CreditCard } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Minus, Plus, Trash2, CreditCard, Loader2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { supabase } from '../lib/supabase';
 
 interface CheckoutProps {
   onBack: () => void;
@@ -7,15 +9,49 @@ interface CheckoutProps {
 
 export default function Checkout({ onBack }: CheckoutProps) {
   const { items, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart();
+  const [isProcessing, setIsProcessing] = useState(false);
+  
   const total = getTotalPrice();
   const subtotal = total;
   const tax = Number((subtotal * 0.1).toFixed(2));
   const grandTotal = Number((subtotal + tax).toFixed(2));
 
-  const handleCheckout = () => {
-    alert(`Order placed successfully! Total: $${grandTotal.toFixed(2)}`);
-    clearCart();
-    onBack();
+  const handleCheckout = async () => {
+    try {
+      setIsProcessing(true);
+      
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert([{ total_amount: grandTotal, status: 'completed' }])
+        .select()
+        .single();
+        
+      if (orderError) throw orderError;
+      
+      const orderItems = items.map(item => ({
+        order_id: orderData.id,
+        product_id: item.coffee.id,
+        product_name: item.coffee.name,
+        quantity: item.quantity,
+        unit_price: item.coffee.price,
+        product_type: item.coffee.category || 'product'
+      }));
+      
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+        
+      if (itemsError) throw itemsError;
+      
+      alert(`Order placed successfully! Total: $${grandTotal.toFixed(2)}`);
+      clearCart();
+      onBack();
+    } catch (error) {
+      console.error('Error placing order:', error);
+      alert('Failed to place order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -117,11 +153,20 @@ export default function Checkout({ onBack }: CheckoutProps) {
 
               <button
                 onClick={handleCheckout}
-                disabled={items.length === 0}
+                disabled={items.length === 0 || isProcessing}
                 className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl flex items-center justify-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                <CreditCard className="w-5 h-5" />
-                <span>Proceed to Payment</span>
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-5 h-5" />
+                    <span>Proceed to Payment</span>
+                  </>
+                )}
               </button>
 
               <p className="text-xs text-gray-500 text-center mt-4">

@@ -49,3 +49,21 @@ export interface AddOn {
   type: string;
   created_at: string;
 }
+
+export interface Order {
+  id: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+}
+
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  product_type?: string;
+  created_at: string;
+}
