@@ -79,22 +79,25 @@ function AppContent() {
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      {currentPage !== 'checkout' && currentPage !== 'product' && (
-        <Header
-          cartCount={getTotalItems()}
-          onCartClick={() => setCurrentPage('checkout')}
-        />
-      )}
+  return newFunction();
 
-      <div className="flex-grow">
-        {renderPage()}
+  function newFunction() {
+    return (
+      <div className="min-h-screen flex flex-col">
+        {currentPage !== 'checkout' && (
+          <Header
+            cartCount={getTotalItems()}
+            onCartClick={() => setCurrentPage('checkout')} />
+        )}
+
+        <div className="flex-grow">
+          {renderPage()}
+        </div>
+
+        {currentPage === 'home' && <Footer />}
       </div>
-
-      {currentPage === 'home' && <Footer />}
-    </div>
-  );
+    );
+  }
 }
 
 function App() {
